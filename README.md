@@ -20,7 +20,7 @@ Not yet implemented (next sprints): backend API, database, location data, intera
 
 - Architecture: YOLO11n (Ultralytics)
 - Dataset: "crack and pothole" (Roboflow Universe, CC BY 4.0), classes: crack, pothole
-- 3,653 original images; the exported version (with augmentation) has 11,340 images (10,244 train / 731 validation)
+- 3,653 original images;
 - Training: 25 epochs, image size 640, Google Colab (Tesla T4), about 1.2 hours
 
 ## Results (validation set)
