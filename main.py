@@ -4,19 +4,75 @@ from PIL import Image
 import numpy as np
 import psycopg2
 import io
+import os
 import base64
 
 app = FastAPI()
 
 model = YOLO("best.pt")
 
-DB_CONFIG = {
-    "dbname": "roadguard",
-    "user": "postgres",
-    "password": "postgres",
-    "host": "localhost",
-    "port": 5432
-}
+# Şifrə kodda saxlanmır, Render-in verdiyi environment variable-dan oxunur
+DATABASE_URL = os.environ.get("DATABASE_URL")
+
+
+def get_conn():
+    return psycopg2.connect(DATABASE_URL)
+
+
+@app.on_event("startup")
+def create_table():
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS reports (
+            id SERIAL PRIMARY KEY,
+            damage_type VARCHAR(50),
+            confidence FLOAT,
+            latitude DOUBLE PRECISION,
+            longitude DOUBLE PRECISION,
+            image VARCHAR(255),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
+    conn.commit()
+    cur.close()
+    conn.close()
+
+
+@app.get("/")
+def health():
+    return {"status": "ok", "service": "RoadGuard API"}
+
+
+@app.get("/reports")
+def get_reports():
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute(
+        """
+        SELECT id, damage_type, confidence, latitude, longitude, image, created_at
+        FROM reports
+        ORDER BY id DESC
+        """
+    )
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+
+    return [
+        {
+            "id": r[0],
+            "damage_type": r[1],
+            "confidence": r[2],
+            "latitude": r[3],
+            "longitude": r[4],
+            "image": r[5],
+            "created_at": r[6].isoformat() if r[6] else None,
+        }
+        for r in rows
+    ]
 
 
 @app.post("/detect")
@@ -33,7 +89,7 @@ async def detect(
 
     detections = []
 
-    conn = psycopg2.connect(**DB_CONFIG)
+    conn = get_conn()
     cur = conn.cursor()
 
     for box in results.boxes:
