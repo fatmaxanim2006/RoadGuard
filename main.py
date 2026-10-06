@@ -96,9 +96,12 @@ async def detect(
         name = model.names[int(box.cls)]
         score = float(box.conf)
 
+        x1, y1, x2, y2 = [round(v, 1) for v in box.xyxy[0].tolist()]
+
         detections.append({
             "damage_type": name,
-            "confidence": round(score, 4)
+            "confidence": round(score, 4),
+            "bbox": {"x1": x1, "y1": y1, "x2": x2, "y2": y2}
         })
 
         cur.execute(
