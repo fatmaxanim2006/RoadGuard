@@ -11,7 +11,7 @@ app = FastAPI()
 
 model = YOLO("best.pt")
 
-# Şifrə kodda saxlanmır, Render-in verdiyi environment variable-dan oxunur
+
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
 
