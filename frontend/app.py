@@ -126,8 +126,9 @@ def show_map():
             tooltip=f"{r['damage_type']} ({r['confidence'] * 100:.0f}%)",
         ).add_to(m)
 
-    if len(located) > 1:
-        m.fit_bounds([[r["latitude"], r["longitude"]] for r in located])
+        points = {(r["latitude"], r["longitude"]) for r in located}
+        if len(points) > 1:
+            m.fit_bounds([list(p) for p in points], max_zoom=15)
 
     st.caption("🔴 Pothole   🟠 Crack")
     st_folium(m, height=500, use_container_width=True, returned_objects=[])
