@@ -3,7 +3,7 @@
 
 *Detect. Report. Map.*
 
-RoadGuard detects road damage (potholes and cracks) from road images using a YOLO object detection model. For each detection it returns the damage class, a bounding box and a confidence score. Results are stored in a PostgreSQL database via a FastAPI backend, and the whole system is deployed online.
+RoadGuard detects road damage (potholes and cracks) from road images using a YOLO object detection model. For each detection it returns the damage class, a bounding box and a confidence score. Results are stored in a PostgreSQL database via a FastAPI backend and shown on an interactive map. The whole system is deployed online.
 
 ## 🌐 Live Demo
 - **Web app (Streamlit):** https://roadguard-cc5k5u5urn2ozumwrk53qy.streamlit.app/
@@ -14,18 +14,20 @@ RoadGuard detects road damage (potholes and cracks) from road images using a YOL
 ## Project Status
 - **Sprint 1 (25%)** — ✅ Complete: working prototype (Streamlit + YOLO)
 - **Sprint 2 (50%)** — ✅ Complete: backend API + database integration
-- **Sprint 3 (65%)** — ✅ Complete: full system deployed online (Render + Streamlit Community Cloud)
+- **Sprint 3 (65%)** — ✅ Complete: full system deployed online (Render + Streamlit Community Cloud), interactive map of reports
 
 ## Architecture
 ```
-[Streamlit frontend]  --HTTP POST-->  [FastAPI backend] --> YOLO model
- (Streamlit Cloud)                      (Render)
-                                            |
-                                            v
-                                  [PostgreSQL database]
-                                       (Render)
+[Streamlit frontend]  --HTTP-->  [FastAPI backend] --> YOLO model
+ (Streamlit Cloud)                 (Render)
+                                       |
+                                       v
+                             [PostgreSQL database]
+                                  (Render)
 ```
-- **Frontend (`frontend/app.py`)**: Streamlit app. The user uploads an image, sets a confidence threshold and optional coordinates, then sees the annotated image with each detection's class, confidence and bounding box.
+- **Frontend (`frontend/app.py`)**: Streamlit app with two tabs.
+  - **Detect**: the user uploads an image, sets a confidence threshold and optional coordinates, then sees the annotated image with each detection's class, confidence and bounding box.
+  - **Map**: an interactive Folium map showing every saved report that has coordinates (red = pothole, orange = crack), with a popup for each marker.
 - **Backend (`main.py`)**: FastAPI app. Runs YOLO inference, draws bounding boxes, saves each detection to PostgreSQL and returns the results (including the annotated image) as JSON.
 - **Database**: PostgreSQL, `reports` table (created automatically on backend startup).
 
@@ -98,7 +100,7 @@ Accepts a road image, runs detection, saves results to the database and returns 
 `bbox` values are pixel coordinates: (x1, y1) is the top-left and (x2, y2) the bottom-right corner of the box.
 
 ### `GET /reports`
-Returns all saved reports (newest first) as a JSON list. This endpoint will feed the interactive map.
+Returns all saved reports (newest first) as a JSON list. Used by the interactive map in the frontend.
 
 Interactive API docs are available at `/docs` (Swagger UI).
 
@@ -114,7 +116,7 @@ Pothole examples are images taken from the web. Crack examples come from the dat
 - Accuracy drops on gravel or unpaved roads, wide street views with thin cracks, and low-quality images.
 - Pothole recall (0.636) is lower than crack recall; more pothole data is planned.
 - The same damage can sometimes be detected twice with overlapping boxes.
-- Location (latitude/longitude) is optional and entered manually; the map view is not implemented yet.
+- Location (latitude/longitude) is entered manually; reports without coordinates are saved but not shown on the map. Automatic GPS is not implemented yet.
 - Free hosting limits: the backend sleeps after inactivity (slow first request), and the free Render database is time-limited.
 
 ## How to run locally
@@ -130,7 +132,7 @@ Pothole examples are images taken from the web. Crack examples come from the dat
 ```
    uvicorn main:app --reload
 ```
-6. Install frontend dependencies and start the frontend (set `API_URL` in `frontend/app.py` to `http://127.0.0.1:8000/detect` for local use):
+6. Install frontend dependencies and start the frontend (for local use, set `API_BASE` in `frontend/app.py` to `http://127.0.0.1:8000`):
 ```
    pip install -r frontend/requirements.txt
    streamlit run frontend/app.py
@@ -138,7 +140,7 @@ Pothole examples are images taken from the web. Crack examples come from the dat
 7. Open http://localhost:8501 in your browser.
 
 ## Next Sprint
-- Interactive map (Folium/Leaflet) showing all reported damage, using `GET /reports`
 - Improve pothole recall (more data / epochs / augmentation)
 - Deduplication of overlapping detections
 - Error handling and UI polish
+- Automatic location (GPS / photo metadata) instead of manual coordinates
