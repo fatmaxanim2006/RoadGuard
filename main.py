@@ -1,4 +1,4 @@
-from fastapi import FastAPI, File, UploadFile, Form
+from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from ultralytics import YOLO
 from PIL import Image
 import numpy as np
@@ -10,7 +10,6 @@ import base64
 app = FastAPI()
 
 model = YOLO("best.pt")
-
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
@@ -41,7 +40,7 @@ def create_table():
     conn.close()
 
 
-@app.get("/")
+@app.api_route("/", methods=["GET", "HEAD"])
 def health():
     return {"status": "ok", "service": "RoadGuard API"}
 
@@ -83,9 +82,12 @@ async def detect(
     conf: float = Form(0.25)
 ):
     contents = await file.read()
-    img = Image.open(io.BytesIO(contents)).convert("RGB")
+    try:
+        img = Image.open(io.BytesIO(contents)).convert("RGB")
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid or corrupted image file.")
 
-    results = model.predict(np.array(img), conf=conf)[0]
+    results = model.predict(np.array(img), conf=conf, iou=0.5, agnostic_nms=True)[0]
 
     detections = []
 
