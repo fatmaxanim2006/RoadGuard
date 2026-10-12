@@ -33,8 +33,7 @@ def run_detection():
     file_bytes = file.getvalue()
     key = f"{file.name}|{len(file_bytes)}|{conf}"
 
-    # Call the backend only when the image or threshold changes.
-    # Nothing is written to the database here (preview only).
+
     if st.session_state.get("det_key") != key:
         with st.spinner("Analyzing... (the first request may take up to a minute)"):
             files = {"file": (file.name, file_bytes, file.type)}
@@ -110,7 +109,6 @@ def has_valid_location(r):
     lat, lon = r.get("latitude"), r.get("longitude")
     if lat is None or lon is None:
         return False
-    # (0, 0) and values near it are leftovers from empty/test input
     return not (abs(lat) < 1 and abs(lon) < 1)
 
 
@@ -140,7 +138,7 @@ def show_map():
         center = [located[0]["latitude"], located[0]["longitude"]]
         zoom = 13
     else:
-        center = [40.4093, 49.8671]  # Baku
+        center = [40.4093, 49.8671]  
         zoom = 11
         st.info("No reports with coordinates yet. Upload an image in the Detect tab, enter latitude/longitude and press 'Save to map'.")
 
