@@ -9,12 +9,13 @@ RoadGuard detects road damage (potholes and cracks) from road images using a YOL
 - **Web app (Streamlit):** https://roadguard-cc5k5u5urn2ozumwrk53qy.streamlit.app/
 - **API docs (Swagger UI):** https://roadguard-api-fcfs.onrender.com/docs
 
-> The backend runs on a free Render plan and goes to sleep after 15 minutes of inactivity. The first request after a pause can take up to a minute.
+> The backend runs on a free Render plan and may go to sleep after 15 minutes of inactivity. The first request after a pause can take up to a minute. A keep-alive monitor pings the service every 5 minutes to reduce this.
 
 ## Project Status
 - **Sprint 1 (25%)** — ✅ Complete: working prototype (Streamlit + YOLO)
 - **Sprint 2 (50%)** — ✅ Complete: backend API + database integration
 - **Sprint 3 (65%)** — ✅ Complete: full system deployed online (Render + Streamlit Community Cloud), interactive map of reports
+- **Sprint 4 (100%)** — ✅ Complete: final polish, duplicate-box merging (NMS), input validation, keep-alive monitoring
 
 ## Architecture
 ```
@@ -75,7 +76,7 @@ Table `reports`:
 Health check. Returns `{"status": "ok", "service": "RoadGuard API"}`.
 
 ### `POST /detect`
-Accepts a road image, runs detection, saves results to the database and returns the annotated image plus detection details.
+Accepts a road image, runs detection, saves results to the database and returns the annotated image plus detection details. Invalid or corrupted images return HTTP 400.
 
 **Request (multipart/form-data):**
 - `file`: image file (jpg/jpeg/png)
@@ -115,9 +116,9 @@ Pothole examples are images taken from the web. Crack examples come from the dat
 - The model works best on close-up photos of asphalt roads.
 - Accuracy drops on gravel or unpaved roads, wide street views with thin cracks, and low-quality images.
 - Pothole recall (0.636) is lower than crack recall; more pothole data is planned.
-- The same damage can sometimes be detected twice with overlapping boxes.
+- Overlapping boxes of the same damage are merged within a single image (NMS), but duplicate reports of the same location from different images are not merged yet.
 - Location (latitude/longitude) is entered manually; reports without coordinates are saved but not shown on the map. Automatic GPS is not implemented yet.
-- Free hosting limits: the backend sleeps after inactivity (slow first request), and the free Render database is time-limited.
+- Free hosting limits: the backend can sleep after inactivity (slow first request), and the free Render database is time-limited.
 
 ## How to run locally
 1. Install Python 3.11+
@@ -139,8 +140,8 @@ Pothole examples are images taken from the web. Crack examples come from the dat
 ```
 7. Open http://localhost:8501 in your browser.
 
-## Next Sprint
+## Future Work
 - Improve pothole recall (more data / epochs / augmentation)
-- Deduplication of overlapping detections
-- Error handling and UI polish
+- Deduplication of reports of the same location across images
 - Automatic location (GPS / photo metadata) instead of manual coordinates
+- Mobile app, damage severity estimation, notifications and an admin dashboard
